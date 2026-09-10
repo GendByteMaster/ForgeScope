@@ -1,0 +1,47 @@
+{
+  "name": "@gendbytemaster/forgescope",
+  "version": "0.1.0",
+  "description": "Repository-wide engineering review and optimization skill with a portable CLI",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "forgescope": "bin/forgescope.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check bin/forgescope.js && node --check lib/cli.js",
+    "prepublishOnly": "npm run check && npm test"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "skills/forgescope/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GendByteMaster/ForgeScope.git"
+  },
+  "bugs": {
+    "url": "https://github.com/GendByteMaster/ForgeScope/issues"
+  },
+  "homepage": "https://github.com/GendByteMaster/ForgeScope#readme",
+  "keywords": [
+    "agent-skills",
+    "codex",
+    "claude-code",
+    "cursor",
+    "code-review",
+    "architecture",
+    "optimization",
+    "engineering-audit",
+    "ai-agents"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
