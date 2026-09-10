@@ -58,6 +58,8 @@ The workspace is not treated as source-of-truth evidence. Current code, configur
 
 ForgeScope does not create or modify the workspace in analysis-only mode, when the user requests no file changes, or when the task is too small to benefit from persistent state.
 
+The generated `.forgescope/REVIEW.md` belongs to the target project, not to the ForgeScope skill repository. Whether it should be committed is a project decision: keep it local when it is temporary working state, or commit it when the team wants a durable review/audit trail.
+
 ## Install with Codex
 
 Using the OpenAI skill installer:
