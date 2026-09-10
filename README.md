@@ -1,6 +1,6 @@
 # ForgeScope
 
-ForgeScope is a reusable engineering review skill for Codex and other tools that support the Agent Skills format.
+ForgeScope is a reusable engineering review and optimization skill for Codex and other Agent-Skills-compatible tools, with a portable npm CLI.
 
 It is designed for repository-wide engineering work where a normal code review is too narrow: architecture, correctness, security, performance, reliability, tests, dependencies, infrastructure, APIs, databases, frontend behavior, documentation, and safe optimization.
 
@@ -10,101 +10,158 @@ ForgeScope follows a conservative engineering loop:
 
 **Understand → Inspect → Prioritize → Fix → Verify**
 
-For substantial work it can also maintain a persistent Markdown review workspace so an audit can be resumed without losing validated context.
+For substantial work it can maintain a persistent Markdown review workspace so an audit can be resumed without losing validated context.
 
 It does not refactor code merely to produce a larger diff. Confirmed correctness, security, reliability, and data-integrity problems come before style cleanup or speculative optimization.
 
-## Structure
+## Repository structure
 
 ```text
-skills/forgescope/
-├── SKILL.md
-├── agents/
-│   └── openai.yaml
-└── references/
-    ├── review-domains.md
-    ├── prioritization-and-fixes.md
-    ├── verification.md
-    ├── subagents.md
-    └── workspace.md
+ForgeScope/
+├── bin/
+│   └── forgescope.js
+├── lib/
+│   └── cli.js
+├── test/
+│   └── cli.test.js
+├── skills/
+│   └── forgescope/
+│       ├── SKILL.md
+│       ├── agents/
+│       │   └── openai.yaml
+│       ├── assets/
+│       │   └── REVIEW.md
+│       └── references/
+│           ├── review-domains.md
+│           ├── prioritization-and-fixes.md
+│           ├── verification.md
+│           ├── subagents.md
+│           └── workspace.md
+└── package.json
 ```
 
-`SKILL.md` contains the core workflow. Detailed guidance lives in `references/` so it is loaded only when relevant.
+`SKILL.md` contains the core workflow. Detailed guidance lives in `references/` and the canonical workspace seed lives in `assets/REVIEW.md`.
 
-## Persistent review workspace
+## CLI
 
-For full reviews, review + fix tasks, optimization passes, release-readiness work, and other substantial multi-step tasks, ForgeScope can create and maintain:
+ForgeScope follows the same portable CLI model as ForgeGuard.
+
+Package:
+
+```text
+@gendbytemaster/forgescope
+```
+
+Binary:
+
+```text
+forgescope
+```
+
+Requires Node.js 18 or newer.
+
+### Install globally for Codex
+
+```bash
+npx @gendbytemaster/forgescope install --client codex --global
+```
+
+### Install in the current project
+
+```bash
+npx @gendbytemaster/forgescope install --client codex
+```
+
+### Install for all supported clients
+
+```bash
+npx @gendbytemaster/forgescope install
+```
+
+Supported clients:
+
+- Codex
+- Claude Code
+- Cursor
+
+Project installs are placed in the client-compatible skills directories. Codex and Cursor share `.agents/skills/forgescope` at project scope, so the CLI deduplicates that target instead of copying it twice.
+
+## Review workspace
+
+Initialize the persistent review workspace in the current repository:
+
+```bash
+npx @gendbytemaster/forgescope init
+```
+
+This creates:
 
 ```text
 .forgescope/
 └── REVIEW.md
 ```
 
-The workspace acts as a resumable engineering ledger. It can track:
+ForgeScope uses this file as resumable engineering state for larger reviews. It stores scope, baseline, findings, hypotheses, execution progress, decisions, verification, remaining risks, and deferred work.
 
-- review scope and objectives;
-- repository map and baseline;
-- confirmed findings and hypotheses;
-- stable finding IDs and severity;
-- execution plan and progress;
-- engineering decisions;
-- changes made;
-- verification commands and results;
-- remaining risks and deferred work.
+Existing workspace content is preserved by default. Reset it only explicitly:
 
-If `.forgescope/REVIEW.md` already exists, ForgeScope reads it first, reconciles it against the current branch and repository state, rejects stale assumptions, and continues valid unresolved work instead of starting from zero.
+```bash
+npx @gendbytemaster/forgescope init --force
+```
 
-The workspace is not treated as source-of-truth evidence. Current code, configuration, tests, and runtime behavior always win.
+The workspace is not source-of-truth evidence. ForgeScope must revalidate it against current code, configuration, branch state, tests, and runtime behavior before continuing previous work.
 
-ForgeScope does not create or modify the workspace in analysis-only mode, when the user requests no file changes, or when the task is too small to benefit from persistent state.
+## CLI commands
 
-The generated `.forgescope/REVIEW.md` belongs to the target project, not to the ForgeScope skill repository. Whether it should be committed is a project decision: keep it local when it is temporary working state, or commit it when the team wants a durable review/audit trail.
+```bash
+npx @gendbytemaster/forgescope install [options]
+npx @gendbytemaster/forgescope status [options]
+npx @gendbytemaster/forgescope uninstall [options]
+npx @gendbytemaster/forgescope init [options]
+```
 
-## Install
+Common options:
 
-### npx (recommended for a quick install)
+```text
+--client <all|codex|claude|cursor>
+--global
+--force
+--dry-run
+-h, --help
+-v, --version
+```
 
-ForgeScope can be installed with the community `skills` CLI.
+Examples:
 
-Install globally for Codex:
+```bash
+npx @gendbytemaster/forgescope status --client codex --global
+npx @gendbytemaster/forgescope install --client all --dry-run
+npx @gendbytemaster/forgescope uninstall --client codex --global
+```
+
+`uninstall` removes only directories that are recognized as ForgeScope installations. It does not delete `.forgescope/REVIEW.md`, so review history is preserved.
+
+## Alternative skill installation
+
+The community `skills` CLI can also install the Agent Skill directly:
 
 ```bash
 npx skills add GendByteMaster/ForgeScope --skill forgescope -a codex -g -y
 ```
 
-Install only for the current project:
+Or install only for the current project:
 
 ```bash
 npx skills add GendByteMaster/ForgeScope --skill forgescope -a codex -y
 ```
 
-Preview the skills detected in the repository without installing:
-
-```bash
-npx skills add GendByteMaster/ForgeScope --list
-```
-
-The `skills` CLI supports Agent-Skills-compatible repositories and Codex. It is a community installer, not the built-in OpenAI Codex skill installer.
-
-### Built-in Codex skill installer
-
-Inside Codex you can ask the built-in `$skill-installer` to install ForgeScope from:
+Inside Codex, the built-in `$skill-installer` can install ForgeScope from:
 
 ```text
 https://github.com/GendByteMaster/ForgeScope/tree/master/skills/forgescope
 ```
 
-Or use the OpenAI installer script directly:
-
-```bash
-python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo GendByteMaster/ForgeScope \
-  --path skills/forgescope
-```
-
-You can also copy `skills/forgescope` into your Codex skills directory manually.
-
-## Usage
+## Using ForgeScope
 
 Examples:
 
@@ -136,6 +193,41 @@ ForgeScope adapts to the request:
 - **Review + optimization** — implement justified improvements and verify them.
 - **Release readiness** — emphasize correctness, security, reliability, tests, deployment, and operational risk.
 
+## Development
+
+Run syntax checks:
+
+```bash
+npm run check
+```
+
+Run tests:
+
+```bash
+npm test
+```
+
+Validate the npm artifact:
+
+```bash
+npm pack --dry-run
+```
+
+CI runs the CLI suite on Node.js 18, 20, and 22 and verifies install, status, workspace initialization, uninstall safety, and npm packaging.
+
+## npm publishing
+
+The package version in `package.json` must match the GitHub release tag.
+
+For example:
+
+```text
+package.json: 0.1.0
+GitHub tag:   v0.1.0
+```
+
+Publishing is triggered by a published GitHub Release and uses the `NPM_TOKEN` repository secret.
+
 ## Design goals
 
 - Evidence over assumptions.
@@ -144,8 +236,11 @@ ForgeScope adapts to the request:
 - No weakened tests or suppressed errors just to make CI green.
 - No invented benchmark gains.
 - No unnecessary architecture migrations.
-- Explicit reporting of checks that could not be run.
+- Safe, idempotent-style installation behavior.
+- Never delete unrelated client configuration or review history.
 
 ## Compatibility
 
-ForgeScope follows the Agent Skills structure used by OpenAI Skills: a required `SKILL.md`, optional `agents/openai.yaml`, and directly linked reference resources.
+ForgeScope follows the Agent Skills structure used by OpenAI Skills: a required `SKILL.md`, optional `agents/openai.yaml`, directly linked reference resources, and optional assets.
+
+The CLI intentionally does not manage `AGENTS.md`. Unlike ForgeGuard, ForgeScope is a task-specific review capability rather than an always-on guardrail, so installing it should not alter normal agent behavior.
