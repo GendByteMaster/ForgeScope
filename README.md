@@ -1,6 +1,6 @@
 # ForgeScope
 
-ForgeScope is a reusable engineering review and optimization skill for Codex and other Agent-Skills-compatible tools, with a portable npm CLI.
+ForgeScope is a reusable engineering review and optimization skill for Codex and other Agent-Skills-compatible tools, with a portable CLI.
 
 It is designed for repository-wide engineering work where a normal code review is too narrow: architecture, correctness, security, performance, reliability, tests, dependencies, infrastructure, APIs, databases, frontend behavior, documentation, and safe optimization.
 
@@ -42,56 +42,110 @@ ForgeScope/
 
 `SKILL.md` contains the core workflow. Detailed guidance lives in `references/` and the canonical workspace seed lives in `assets/REVIEW.md`.
 
-## CLI
+## Quick start
 
-ForgeScope follows the same portable CLI model as ForgeGuard.
+ForgeScope follows the same GitHub-first CLI model as ForgeGuard.
 
-Package:
+Run ForgeScope directly from GitHub with `npx`:
+
+```bash
+npx --yes github:GendByteMaster/ForgeScope install
+```
+
+Install for Codex at user level:
+
+```bash
+npx --yes github:GendByteMaster/ForgeScope install --client codex --global
+```
+
+Check installation:
+
+```bash
+npx --yes github:GendByteMaster/ForgeScope status --client codex --global
+```
+
+Initialize a review workspace in the current repository:
+
+```bash
+npx --yes github:GendByteMaster/ForgeScope init
+```
+
+Upgrade or replace an existing ForgeScope installation:
+
+```bash
+npx --yes github:GendByteMaster/ForgeScope install --client codex --global --force
+```
+
+Uninstall:
+
+```bash
+npx --yes github:GendByteMaster/ForgeScope uninstall --client codex --global
+```
+
+These commands run directly from GitHub and do not require the package to exist in the npm Registry.
+
+## Pinning a release
+
+For reproducible installation, pin the GitHub release tag:
+
+```bash
+npx --yes github:GendByteMaster/ForgeScope#v0.1.0 install --client codex --global
+```
+
+This runs the exact ForgeScope `v0.1.0` source instead of the latest default branch.
+
+## `npx` vs a permanent `forgescope` command
+
+`npx --yes github:GendByteMaster/ForgeScope ...` is a one-shot invocation. It runs ForgeScope for that command but does not permanently install the `forgescope` command in your shell.
+
+If you want to type `forgescope` directly, install the CLI globally from GitHub:
+
+```bash
+npm install --global github:GendByteMaster/ForgeScope
+forgescope --version
+```
+
+On Windows, reopen the terminal if the npm global `bin` directory was added to `PATH` after the current shell started.
+
+### Important: two meanings of global
+
+These are separate concepts:
 
 ```text
-@gendbytemaster/forgescope
+npm install --global ...  -> installs the ForgeScope CLI as a shell command
+forgescope ... --global   -> targets user-level Agent Skill directories
 ```
 
-Binary:
+ForgeScope's `--global` flag does not install the CLI itself.
 
-```text
-forgescope
-```
+## Supported clients
 
-Requires Node.js 18 or newer.
-
-### Install globally for Codex
-
-```bash
-npx @gendbytemaster/forgescope install --client codex --global
-```
-
-### Install in the current project
-
-```bash
-npx @gendbytemaster/forgescope install --client codex
-```
-
-### Install for all supported clients
-
-```bash
-npx @gendbytemaster/forgescope install
-```
-
-Supported clients:
+ForgeScope supports:
 
 - Codex
 - Claude Code
 - Cursor
 
-Project installs are placed in the client-compatible skills directories. Codex and Cursor share `.agents/skills/forgescope` at project scope, so the CLI deduplicates that target instead of copying it twice.
+Project-level Codex install:
+
+```bash
+npx --yes github:GendByteMaster/ForgeScope install --client codex
+```
+
+User-level Codex install:
+
+```bash
+npx --yes github:GendByteMaster/ForgeScope install --client codex --global
+```
+
+Project installs are placed in client-compatible Skill directories. Codex and Cursor share `.agents/skills/forgescope` at project scope, so the CLI deduplicates that target instead of copying it twice.
 
 ## Review workspace
 
 Initialize the persistent review workspace in the current repository:
 
 ```bash
-npx @gendbytemaster/forgescope init
+npx --yes github:GendByteMaster/ForgeScope init
 ```
 
 This creates:
@@ -106,18 +160,18 @@ ForgeScope uses this file as resumable engineering state for larger reviews. It 
 Existing workspace content is preserved by default. Reset it only explicitly:
 
 ```bash
-npx @gendbytemaster/forgescope init --force
+npx --yes github:GendByteMaster/ForgeScope init --force
 ```
 
 The workspace is not source-of-truth evidence. ForgeScope must revalidate it against current code, configuration, branch state, tests, and runtime behavior before continuing previous work.
 
 ## CLI commands
 
-```bash
-npx @gendbytemaster/forgescope install [options]
-npx @gendbytemaster/forgescope status [options]
-npx @gendbytemaster/forgescope uninstall [options]
-npx @gendbytemaster/forgescope init [options]
+```text
+forgescope install [options]
+forgescope status [options]
+forgescope uninstall [options]
+forgescope init [options]
 ```
 
 Common options:
@@ -131,17 +185,7 @@ Common options:
 -v, --version
 ```
 
-Examples:
-
-```bash
-npx @gendbytemaster/forgescope status --client codex --global
-npx @gendbytemaster/forgescope install --client all --dry-run
-npx @gendbytemaster/forgescope uninstall --client codex --global
-```
-
-`uninstall` removes only directories that are recognized as ForgeScope installations. It does not delete `.forgescope/REVIEW.md`, so review history is preserved.
-
-## Alternative skill installation
+## Alternative installation methods
 
 The community `skills` CLI can also install the Agent Skill directly:
 
@@ -149,17 +193,13 @@ The community `skills` CLI can also install the Agent Skill directly:
 npx skills add GendByteMaster/ForgeScope --skill forgescope -a codex -g -y
 ```
 
-Or install only for the current project:
-
-```bash
-npx skills add GendByteMaster/ForgeScope --skill forgescope -a codex -y
-```
-
 Inside Codex, the built-in `$skill-installer` can install ForgeScope from:
 
 ```text
 https://github.com/GendByteMaster/ForgeScope/tree/master/skills/forgescope
 ```
+
+ForgeScope can also be published to the npm Registry as `@gendbytemaster/forgescope`, but Registry publication is not required for the GitHub-first `npx` workflow above.
 
 ## Using ForgeScope
 
@@ -217,16 +257,18 @@ CI runs the CLI suite on Node.js 18, 20, and 22 and verifies install, status, wo
 
 ## npm publishing
 
-The package version in `package.json` must match the GitHub release tag.
+ForgeScope uses the same npm publishing workflow as ForgeGuard.
 
-For example:
+The package version in `package.json` must match the GitHub release tag:
 
 ```text
 package.json: 0.1.0
 GitHub tag:   v0.1.0
 ```
 
-Publishing is triggered by a published GitHub Release and uses the `NPM_TOKEN` repository secret.
+A published GitHub Release triggers `.github/workflows/publish-npm.yml`, which validates the package and publishes `@gendbytemaster/forgescope` using the repository `NPM_TOKEN` secret.
+
+This npm publication is optional for users who run ForgeScope directly from GitHub with `npx --yes github:GendByteMaster/ForgeScope ...`.
 
 ## Design goals
 
