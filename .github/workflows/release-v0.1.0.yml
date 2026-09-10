@@ -1,0 +1,93 @@
+name: Release v0.1.0
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - .github/workflows/release-v0.1.0.yml
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Verify version
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          test "$VERSION" = "0.1.0"
+
+      - name: Validate package
+        run: |
+          npm run check
+          npm test
+          npm pack --dry-run
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v0.1.0 >/dev/null 2>&1; then
+            echo "GitHub Release v0.1.0 already exists"
+          else
+            cat > release-notes.md <<'EOF'
+          # ForgeScope v0.1.0
+
+          First public release of ForgeScope.
+
+          ForgeScope is a repository-wide engineering review and optimization Agent Skill with a portable CLI for Codex, Claude Code, and Cursor.
+
+          ## Highlights
+
+          - Understand → Inspect → Prioritize → Fix → Verify engineering workflow.
+          - Architecture, correctness, security, performance, reliability, API, database, frontend, tests, dependencies, infrastructure, and documentation review guidance.
+          - Persistent `.forgescope/REVIEW.md` workspace for resumable audits.
+          - Safe bounded subagent delegation with primary-agent ownership.
+          - Portable npm CLI with `install`, `status`, `uninstall`, and `init` commands.
+          - Project-level and global installation for Codex, Claude Code, and Cursor.
+          - Safe uninstall behavior that preserves review history.
+          - Node.js 18+ support with CI coverage on Node 18, 20, and 22.
+
+          ## Install
+
+          ```bash
+          npx @gendbytemaster/forgescope install --client codex --global
+          ```
+
+          Initialize a repository review workspace:
+
+          ```bash
+          npx @gendbytemaster/forgescope init
+          ```
+          EOF
+            gh release create v0.1.0 \
+              --target "$GITHUB_SHA" \
+              --title "ForgeScope v0.1.0" \
+              --notes-file release-notes.md
+          fi
+
+      - name: Publish npm package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          if npm view @gendbytemaster/forgescope@0.1.0 version >/dev/null 2>&1; then
+            echo "@gendbytemaster/forgescope@0.1.0 already published"
+          else
+            test -n "${NODE_AUTH_TOKEN:-}" || { echo "NPM_TOKEN is not configured"; exit 1; }
+            npm publish --access public --provenance
+          fi
