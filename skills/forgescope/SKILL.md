@@ -1,6 +1,6 @@
 ---
 name: forgescope
-description: Deeply review, audit, optimize, and safely improve a software repository. Use when Codex needs to inspect project architecture, correctness, code quality, security, performance, reliability, tests, APIs, databases, frontend behavior, dependencies, infrastructure, technical debt, production readiness, or repository-wide engineering risks; use for analysis-only reviews, targeted audits, full-project reviews, optimization passes, and review-plus-fix tasks.
+description: Deeply review, audit, optimize, and safely improve a software repository. Use when Codex needs to inspect project architecture, correctness, code quality, security, performance, reliability, tests, APIs, databases, frontend behavior, dependencies, infrastructure, technical debt, production readiness, or repository-wide engineering risks; use for analysis-only reviews, targeted audits, full-project reviews, optimization passes, review-plus-fix tasks, and resumable multi-step engineering reviews.
 ---
 
 # ForgeScope
@@ -13,15 +13,18 @@ Prioritize evidence, correctness, safety, and maintainability. Do not refactor w
 
 Follow this sequence unless the user's task clearly requires a narrower path:
 
-1. Understand the repository and the requested scope.
+1. Understand the repository and requested scope.
 2. Establish current behavior, architecture, conventions, and verification commands.
-3. Inspect relevant engineering domains.
-4. Separate confirmed findings from hypotheses.
-5. Prioritize findings by severity and practical impact.
-6. Implement only justified changes when modification is requested.
-7. Review the resulting diff for regressions and unrelated changes.
-8. Run the strongest applicable verification available.
-9. Report findings, changes, evidence, remaining risks, and unexecuted checks.
+3. Create or resume the ForgeScope Markdown workspace when appropriate.
+4. Inspect relevant engineering domains.
+5. Separate confirmed findings from hypotheses.
+6. Prioritize findings by severity and practical impact.
+7. Implement only justified changes when modification is requested.
+8. Update the workspace as meaningful state changes occur.
+9. Review the resulting diff for regressions and unrelated changes.
+10. Run the strongest applicable verification available.
+11. Reconcile the workspace with the final repository state.
+12. Report findings, changes, evidence, remaining risks, and unexecuted checks.
 
 The user's explicit instructions override this workflow.
 
@@ -55,7 +58,35 @@ Infer the narrowest mode that satisfies the request:
 
 Do not silently expand a narrow request into a repository rewrite.
 
-## 3. Review by engineering domain
+## 3. Maintain a review workspace
+
+Read `references/workspace.md` for substantial, multi-step, or resumable reviews.
+
+When file modifications are allowed and persistent tracking would materially help, create or reuse:
+
+` .forgescope/REVIEW.md `
+
+Use it as the active review ledger for:
+
+- scope and objectives;
+- repository map and baseline;
+- confirmed findings and hypotheses;
+- severity and stable finding IDs;
+- execution plan and status;
+- engineering decisions and rejected alternatives;
+- changes made;
+- verification results;
+- remaining risks and deferred work.
+
+If the file already exists, read it before continuing. Reconcile recorded state against the current branch, code, configuration, and tests. Do not trust stale findings blindly.
+
+Update the workspace only when meaningful state changes occur. Keep it concise and resumable.
+
+Do not create or modify the workspace in analysis-only mode, when the user requested no file changes, or when the task is too small to benefit from persistent state.
+
+Never write secrets, credentials, production customer data, or other sensitive values into the workspace.
+
+## 4. Review by engineering domain
 
 Read `references/review-domains.md` when the task requires a broad review or when one of those domains is materially relevant.
 
@@ -72,7 +103,7 @@ Focus first on risks that can affect:
 
 Do not manufacture findings to fill every category. A clean domain may simply have no material issue.
 
-## 4. Distinguish evidence from suspicion
+## 5. Distinguish evidence from suspicion
 
 For every material finding, establish at least one credible basis such as:
 
@@ -91,7 +122,9 @@ Label uncertain concerns as hypotheses and state what would confirm them.
 
 Do not present speculative performance, security, or concurrency concerns as confirmed defects.
 
-## 5. Prioritize before editing
+Record material findings in the workspace when one is active. Keep stable finding IDs as their severity or status changes.
+
+## 6. Prioritize before editing
 
 Read `references/prioritization-and-fixes.md` before broad refactors, multi-file changes, architectural changes, or when many findings compete for attention.
 
@@ -113,7 +146,9 @@ For substantial changes, weigh:
 
 Prefer high-confidence, high-impact, low-regression-risk work.
 
-## 6. Implement conservatively
+When a workspace is active, keep the execution plan ordered by current priority rather than by discovery order.
+
+## 7. Implement conservatively
 
 When the user asks for fixes or optimization:
 
@@ -128,9 +163,11 @@ When the user asks for fixes or optimization:
 - do not suppress diagnostics, weaken types, remove assertions, disable checks, or relax tests merely to obtain a green result;
 - do not hide existing failures by changing unrelated code.
 
+Move workspace items through explicit states such as `CONFIRMED`, `PLANNED`, `IN_PROGRESS`, `FIXED`, and `VERIFIED`. A fix is not verified merely because code was edited.
+
 After editing, inspect the final diff and remove accidental churn.
 
-## 7. Use subagents deliberately
+## 8. Use subagents deliberately
 
 Read `references/subagents.md` when subagents are available and the task is large enough to benefit from parallel investigation.
 
@@ -142,13 +179,16 @@ The primary agent remains responsible for:
 - resolving contradictory findings;
 - deciding which recommendations are valid;
 - integrating code changes;
+- maintaining coherent workspace state;
 - reviewing the final diff;
 - verification;
 - the final engineering judgment.
 
+Subagents may return evidence or proposed workspace updates, but the primary agent must validate them before recording findings as confirmed.
+
 Never merge subagent recommendations blindly.
 
-## 8. Verify proportionally to risk
+## 9. Verify proportionally to risk
 
 Read `references/verification.md` before finalizing code changes or a release-readiness review.
 
@@ -172,11 +212,23 @@ Start with focused checks when iteration speed matters, then run broader checks 
 
 Never claim a command passed unless it was actually executed successfully.
 
-If environment limitations prevent a check, state exactly what could not be verified and why.
+If a workspace is active, record commands and results accurately. Do not convert `FIXED` to `VERIFIED` until the required check has actually succeeded.
 
-## 9. Report the result
+If environment limitations prevent a check, state exactly what could not be verified and why and record the item as blocked or not run.
 
-Keep the final report proportional to the task. For a substantial review, include:
+## 10. Reconcile and report
+
+Before final reporting, reconcile any active `.forgescope/REVIEW.md` with:
+
+- the final diff;
+- current repository state;
+- actual verification results;
+- unresolved findings;
+- intentionally deferred work.
+
+Remove or mark disproved hypotheses as rejected. Do not leave stale `TODO` or `FIXED` states that contradict the actual result.
+
+Keep the final user-facing report proportional to the task. For a substantial review, include:
 
 ### Findings
 
@@ -214,4 +266,5 @@ For analysis-only requests, replace `Changes` with a remediation plan.
 - Preserve working behavior unless there is a clear reason to change it.
 - Do not optimize solely for smaller code or fewer files.
 - Do not treat every TODO, dependency, long function, or abstraction as a defect.
+- Treat the workspace as resumable state, not as source-of-truth evidence.
 - A smaller correct diff is better than a large impressive diff.
