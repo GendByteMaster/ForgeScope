@@ -3,6 +3,16 @@ name: Publish npm
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: GitHub release tag to publish
+        required: true
+        default: v0.1.0
+  push:
+    branches: [master]
+    paths:
+      - .github/workflows/publish-npm.yml
 
 permissions:
   contents: read
@@ -10,24 +20,30 @@ permissions:
 
 jobs:
   publish:
-    if: startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name || 'v0.1.0' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: '24'
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
 
-      - name: Verify package version matches release tag
+      - name: Verify release and package version
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          set -euo pipefail
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
-          test "$TAG_VERSION" = "$PACKAGE_VERSION"
+          test "$RELEASE_TAG" = "v$PACKAGE_VERSION"
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Validate package
         run: |
@@ -35,7 +51,22 @@ jobs:
           npm test
           npm pack --dry-run
 
-      - name: Publish
-        run: npm publish --access public --provenance
+      - name: Publish package
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          PACKAGE_NAME="$(node -p "require('./package.json').name")"
+
+          if npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version >/dev/null 2>&1; then
+            echo "$PACKAGE_NAME@$PACKAGE_VERSION is already published"
+            exit 0
+          fi
+
+          test -n "${NODE_AUTH_TOKEN:-}" || {
+            echo "NPM_TOKEN is not configured in GitHub repository secrets"
+            exit 1
+          }
+
+          npm publish --access public --provenance
