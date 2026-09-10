@@ -1,0 +1,4 @@
+interface:
+  display_name: "ForgeScope"
+  short_description: "Deep project review, optimization, and verified engineering fixes"
+  default_prompt: "Use ForgeScope to inspect this repository, prioritize real engineering risks, make only justified changes, and verify the final result."
