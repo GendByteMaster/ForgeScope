@@ -1,4 +1,4 @@
 interface:
   display_name: "ForgeScope"
   short_description: "Deep project review, optimization, and verified engineering fixes"
-  default_prompt: "Use ForgeScope to inspect this repository, prioritize real engineering risks, make only justified changes, maintain .forgescope/REVIEW.md for substantial resumable work when file changes are allowed, and verify the final result."
+  default_prompt: "Use ForgeScope to inspect this repository, maintain .forgescope/REVIEW.md for substantial work, prioritize real engineering risks, make only justified changes, and verify the final result."
