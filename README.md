@@ -60,9 +60,41 @@ ForgeScope does not create or modify the workspace in analysis-only mode, when t
 
 The generated `.forgescope/REVIEW.md` belongs to the target project, not to the ForgeScope skill repository. Whether it should be committed is a project decision: keep it local when it is temporary working state, or commit it when the team wants a durable review/audit trail.
 
-## Install with Codex
+## Install
 
-Using the OpenAI skill installer:
+### npx (recommended for a quick install)
+
+ForgeScope can be installed with the community `skills` CLI.
+
+Install globally for Codex:
+
+```bash
+npx skills add GendByteMaster/ForgeScope --skill forgescope -a codex -g -y
+```
+
+Install only for the current project:
+
+```bash
+npx skills add GendByteMaster/ForgeScope --skill forgescope -a codex -y
+```
+
+Preview the skills detected in the repository without installing:
+
+```bash
+npx skills add GendByteMaster/ForgeScope --list
+```
+
+The `skills` CLI supports Agent-Skills-compatible repositories and Codex. It is a community installer, not the built-in OpenAI Codex skill installer.
+
+### Built-in Codex skill installer
+
+Inside Codex you can ask the built-in `$skill-installer` to install ForgeScope from:
+
+```text
+https://github.com/GendByteMaster/ForgeScope/tree/master/skills/forgescope
+```
+
+Or use the OpenAI installer script directly:
 
 ```bash
 python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
@@ -70,7 +102,7 @@ python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github
   --path skills/forgescope
 ```
 
-Or copy `skills/forgescope` into your Codex skills directory.
+You can also copy `skills/forgescope` into your Codex skills directory manually.
 
 ## Usage
 
