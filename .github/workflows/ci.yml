@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  cli:
+    name: CLI / Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Syntax check
+        run: npm run check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Verify CLI version
+        run: |
+          EXPECTED_VERSION="$(node -p "require('./package.json').version")"
+          ACTUAL_VERSION="$(node bin/forgescope.js --version)"
+          test "$ACTUAL_VERSION" = "$EXPECTED_VERSION"
+
+      - name: Dry-run install
+        run: node bin/forgescope.js install --dry-run
+
+      - name: Install ForgeScope
+        run: node bin/forgescope.js install
+
+      - name: Initialize review workspace
+        run: node bin/forgescope.js init
+
+      - name: Check status
+        run: node bin/forgescope.js status
+
+      - name: Verify installed skills and workspace
+        run: |
+          set -euo pipefail
+          test -f .agents/skills/forgescope/SKILL.md
+          test -f .claude/skills/forgescope/SKILL.md
+          test -f .forgescope/REVIEW.md
+          grep -q '^name: forgescope$' .agents/skills/forgescope/SKILL.md
+          grep -q '^# ForgeScope Review$' .forgescope/REVIEW.md
+
+      - name: Uninstall ForgeScope
+        run: node bin/forgescope.js uninstall
+
+      - name: Verify uninstall preserves workspace
+        run: |
+          set -euo pipefail
+          test ! -e .agents/skills/forgescope
+          test ! -e .claude/skills/forgescope
+          test -f .forgescope/REVIEW.md
+
+      - name: Pack npm artifact
+        run: npm pack --dry-run
