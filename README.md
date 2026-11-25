@@ -49,37 +49,37 @@ ForgeScope follows the same GitHub-first CLI model as ForgeGuard.
 Run ForgeScope directly from GitHub with `npx`:
 
 ```bash
-npx --yes github:GendByteMaster/ForgeScope install
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope install
 ```
 
 Install for Codex at user level:
 
 ```bash
-npx --yes github:GendByteMaster/ForgeScope install --client codex --global
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope install --client codex --global
 ```
 
 Check installation:
 
 ```bash
-npx --yes github:GendByteMaster/ForgeScope status --client codex --global
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope status --client codex --global
 ```
 
 Initialize a review workspace in the current repository:
 
 ```bash
-npx --yes github:GendByteMaster/ForgeScope init
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope init
 ```
 
 Upgrade or replace an existing ForgeScope installation:
 
 ```bash
-npx --yes github:GendByteMaster/ForgeScope install --client codex --global --force
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope install --client codex --global --force
 ```
 
 Uninstall:
 
 ```bash
-npx --yes github:GendByteMaster/ForgeScope uninstall --client codex --global
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope uninstall --client codex --global
 ```
 
 These commands run directly from GitHub and do not require the package to exist in the npm Registry.
@@ -89,19 +89,19 @@ These commands run directly from GitHub and do not require the package to exist 
 For reproducible installation, pin the GitHub release tag:
 
 ```bash
-npx --yes github:GendByteMaster/ForgeScope#v0.1.0 install --client codex --global
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope#v0.1.0 install --client codex --global
 ```
 
 This runs the exact ForgeScope `v0.1.0` source instead of the latest default branch.
 
 ## `npx` vs a permanent `forgescope` command
 
-`npx --yes github:GendByteMaster/ForgeScope ...` is a one-shot invocation. It runs ForgeScope for that command but does not permanently install the `forgescope` command in your shell.
+`npx --yes --allow-git=all github:GendByteMaster/ForgeScope ...` is a one-shot invocation. It runs ForgeScope for that command but does not permanently install the `forgescope` command in your shell.
 
 If you want to type `forgescope` directly, install the CLI globally from GitHub:
 
 ```bash
-npm install --global github:GendByteMaster/ForgeScope
+npm install --global --allow-git=all github:GendByteMaster/ForgeScope
 forgescope --version
 ```
 
@@ -129,13 +129,13 @@ ForgeScope supports:
 Project-level Codex install:
 
 ```bash
-npx --yes github:GendByteMaster/ForgeScope install --client codex
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope install --client codex
 ```
 
 User-level Codex install:
 
 ```bash
-npx --yes github:GendByteMaster/ForgeScope install --client codex --global
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope install --client codex --global
 ```
 
 Project installs are placed in client-compatible Skill directories. Codex and Cursor share `.agents/skills/forgescope` at project scope, so the CLI deduplicates that target instead of copying it twice.
@@ -145,7 +145,7 @@ Project installs are placed in client-compatible Skill directories. Codex and Cu
 Initialize the persistent review workspace in the current repository:
 
 ```bash
-npx --yes github:GendByteMaster/ForgeScope init
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope init
 ```
 
 This creates:
@@ -160,7 +160,7 @@ ForgeScope uses this file as resumable engineering state for larger reviews. It 
 Existing workspace content is preserved by default. Reset it only explicitly:
 
 ```bash
-npx --yes github:GendByteMaster/ForgeScope init --force
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope init --force
 ```
 
 The workspace is not source-of-truth evidence. ForgeScope must revalidate it against current code, configuration, branch state, tests, and runtime behavior before continuing previous work.
@@ -268,7 +268,7 @@ GitHub tag:   v0.1.0
 
 A published GitHub Release triggers `.github/workflows/publish-npm.yml`, which validates the package and publishes `@gendbytemaster/forgescope` using the repository `NPM_TOKEN` secret.
 
-This npm publication is optional for users who run ForgeScope directly from GitHub with `npx --yes github:GendByteMaster/ForgeScope ...`.
+This npm publication is optional for users who run ForgeScope directly from GitHub with `npx --yes --allow-git=all github:GendByteMaster/ForgeScope ...`.
 
 ## Design goals
 
@@ -286,3 +286,31 @@ This npm publication is optional for users who run ForgeScope directly from GitH
 ForgeScope follows the Agent Skills structure used by OpenAI Skills: a required `SKILL.md`, optional `agents/openai.yaml`, directly linked reference resources, and optional assets.
 
 The CLI intentionally does not manage `AGENTS.md`. Unlike ForgeGuard, ForgeScope is a task-specific review capability rather than an always-on guardrail, so installing it should not alter normal agent behavior.
+
+## npm 12 compatibility (EALLOWGIT)
+
+npm 12 denies Git-sourced packages by default. The examples use `--allow-git=all` before the package argument to opt in for one invocation only, without changing persistent configuration. It permits all Git dependencies in that invocation; use only trusted, reviewed sources. On older npm versions that do not recognize this option, omit it if Git fetching is permitted. See [npm configuration](https://docs.npmjs.com/cli/using-npm/config/#allow-git).
+
+```bash
+# Install
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope#v0.1.0 install --client codex --global
+# Upgrade existing installation
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope#v0.1.0 install --client codex --global --force
+# Verify installed Skill
+npx --yes --allow-git=all github:GendByteMaster/ForgeScope#v0.1.0 status --client codex --global
+```
+
+Use --force only to refresh the Skill; preserve the review workspace. Omit `--global` for project scope; restart the agent after updating.
+
+If Git fetching is prohibited, use Git and Node.js directly (from the intended target project, with a separate source checkout):
+
+```powershell
+$src = Join-Path $env:TEMP ("forgescope-" + [guid]::NewGuid().ToString("N"))
+git clone --branch v0.1.0 --depth 1 https://github.com/GendByteMaster/ForgeScope.git $src
+node "$src/bin/forgescope.js" install --client codex --global
+# For an existing installation, use instead:
+# node "$src/bin/forgescope.js" install --client codex --global --force
+node "$src/bin/forgescope.js" status --client codex --global
+```
+
+The npm 12 option follows npm's documented configuration; live npm 12 execution is not yet verified here.
